@@ -79,10 +79,8 @@ def FindUnique(data):
     
     if None not in features_pack[video_id]:
         video_output = features_pack.pop(video_id)
-        print(video_output)
+        # print(video_output)
         message = UniquePersonSearch(video_id,video_output,new_timestamp)
-
-    print(features_pack)
 
 
 
@@ -116,7 +114,6 @@ def rabbitmq_consumer():
 if __name__ == '__main__':
     # app.run(host="0.0.0.0", debug=True, use_reloader=True, threaded=True)
     try:
-        print(features_pack)
         rabbitmq_consumer()
     except KeyboardInterrupt:
         quit = True
