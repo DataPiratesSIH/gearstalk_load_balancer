@@ -1,0 +1,22 @@
+version: '3.0'
+services:
+  main:
+    container_name: main
+    networks:
+      - loadbalancer
+    env_file:
+      - .env
+    build : .
+      
+
+  rabbit:
+    restart: always
+    networks:
+      - loadbalancer
+    image: "bitnami/rabbitmq:3.7.17"
+    container_name: rabbit
+    env_file:
+      - .env
+
+networks:
+  loadbalancer: {}
