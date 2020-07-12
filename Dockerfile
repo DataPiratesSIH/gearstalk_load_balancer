@@ -1,7 +1,7 @@
 FROM python:3.7-slim
 
 WORKDIR /app
-RUN pip install pika dotenv
+RUN pip install -r  /app/requirements.txt
 
 COPY mediator.py /app
 

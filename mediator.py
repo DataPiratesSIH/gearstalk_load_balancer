@@ -4,17 +4,66 @@ import os
 import collections
 import ast
 import requests
+import pymongo
+from bson import ObjectId
 from datetime import datetime,timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
-HOSTURL = os.getenv("HOST_URL")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
 RABBITMQ_USERNAME = os.getenv("RABBITMQ_USERNAME")
 RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD")
+CONNECTION_STRING = os.getenv("MONGODB_STRING_CLOUD")
 MAIN_SERVER = os.getenv("MAIN_SERVER")
+
+
+client = pymongo.MongoClient(CONNECTION_STRING)
+db = client.get_database('gearstalk')
+
 
 features_pack = {}
 frame_rate = 1
+
+
+
+'''------------------------------------------------
+                    Saving into db
+--------------------------------------------------'''
+
+def save_frame(video_id,frame_output,timestamp,frame_sec):
+    if video_id == None:
+        status = False
+        message = "No video_Id in param."
+        return status,message
+    else:
+        features = db.features.find_one({ "video_id": video_id,"timestamp": timestamp})
+        # print(features)
+        if features == None:
+            frame_details = [{
+                "frame_sec" : frame_sec,
+                "persons" : json.dumps(frame_output)
+            }]
+            db.features.insert_one({
+                "video_id": video_id,
+                "timestamp": timestamp,
+                "metadata" : frame_details
+            })
+            status = True
+            message = "Frame output successfully added to the db!!"
+        else:
+            frame_details = {
+                "frame_sec" : frame_sec,
+                "persons" : json.dumps(frame_output)
+            }
+            newvalues = { "$push": {"metadata" : frame_details }}
+            result = db.features.find_one_and_update({ "_id": ObjectId(features['_id'])}, newvalues )
+            status = True
+            message = "Frame output successfully added to the db!!"
+        
+        return status,message
+
+
+
 
 '''------------------------------------------------
         Finding unique persons from the video
@@ -27,7 +76,7 @@ frame_rate = 1
 def UniquePersonSearch(video_id, object_data,timestamp):
     
     #Saving all the frames into the db
-    # db.features.insert_many(video_output)
+    # db.features.insert_many(object_data)
 
     #converting to 3d-Array
     array3d=[]
@@ -44,7 +93,7 @@ def UniquePersonSearch(video_id, object_data,timestamp):
                 unpack = ast.literal_eval(k)
                 for _ in range(person[k]):
                     new_timestamp = timestamp + timedelta(seconds=i*frame_rate)
-                    unique_person.append({'video_id': video_id, 'last_seen': { "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") }, 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
+                    unique_person.append({'video_id': video_id, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
     new_timestamp = timestamp + timedelta(seconds=(i+1)*frame_rate)
     for k in array3d[len(array3d)-1].keys():
         unpack = ast.literal_eval(k)
@@ -53,7 +102,7 @@ def UniquePersonSearch(video_id, object_data,timestamp):
     
     #Send to the main Server(gearstalk_baxkend1)
     print(unique_person)
-    r = requests.post("https://512b1f665a0f.ngrok.io/process/FindUnique", data=json.dumps({"video_id": video_id, "unique_person":unique_person}) )
+    r = requests.post(MAIN_SERVER+"/process/FindUnique", data=json.dumps({"video_id": video_id, "unique_person":unique_person}) )
 
     return "Your video is processed"
 
@@ -69,6 +118,9 @@ def FindUnique(data):
     frame_details = json.loads(data['frame_details'])
     message = "Video Processing not over!!"
     new_timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+
+
+    save_frame(video_id,frame_details,timestamp,frame_sec)
     
     if video_id in features_pack.keys():
         features_pack[video_id][int(frame_sec//frame_rate)] =  {"frame_sec":frame_sec,"persons":frame_details}
@@ -90,10 +142,10 @@ def FindUnique(data):
 ------------------------------------------'''
 
 def rabbitmq_consumer():
-    credentials = pika.PlainCredentials('test', 'test')
+    credentials = pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD)
 
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host='localhost', credentials=credentials))                       #load_balancer url/ip in (host)
+        pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))                       #load_balancer url/ip in (host)
     channel = connection.channel()
 
     channel.queue_declare(queue='frame_output')
