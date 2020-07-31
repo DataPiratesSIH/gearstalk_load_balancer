@@ -1,4 +1,4 @@
-version: '3.0'
+version: '3'
 services:
   main:
     container_name: main
@@ -7,6 +7,18 @@ services:
     env_file:
       - .env
     build : .
+    restart: always
+    command: >
+      /bin/sh -c "
+        echo Waiting for rabbitmq service start...;
+        while ! nc -z rabbit 5672;
+        do
+          sleep 1;
+        done;
+        echo Connected!;
+        python mediator.py
+      "
+    
       
 
   rabbit:
@@ -15,6 +27,9 @@ services:
       - loadbalancer
     image: "bitnami/rabbitmq:3.7.17"
     container_name: rabbit
+    ports:
+      - "15672:15672"
+      - "5672:5672"
     env_file:
       - .env
 

@@ -145,7 +145,7 @@ def rabbitmq_consumer():
     credentials = pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD)
 
     connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=credentials))                       #load_balancer url/ip in (host)
+        pika.ConnectionParameters(RABBITMQ_HOST, 5672, '/', credentials))                       #load_balancer url/ip in (host)
     channel = connection.channel()
 
     channel.queue_declare(queue='frame_output')
