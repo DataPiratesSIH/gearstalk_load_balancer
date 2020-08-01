@@ -93,12 +93,12 @@ def UniquePersonSearch(video_id, object_data,timestamp):
                 unpack = ast.literal_eval(k)
                 for _ in range(person[k]):
                     new_timestamp = timestamp + timedelta(seconds=i*frame_rate)
-                    unique_person.append({'video_id': video_id,"frame_sec":i, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
+                    unique_person.append({'video_id': video_id,"frame_sec":i, "timestamp": new_timestamp, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
     new_timestamp = timestamp + timedelta(seconds=(i+1)*frame_rate)
     for k in array3d[len(array3d)-1].keys():
         unpack = ast.literal_eval(k)
         for _ in range(array3d[len(array3d)-1][k]):
-            unique_person.append({'video_id': video_id,"frame_sec":i+1, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
+            unique_person.append({'video_id': video_id,"frame_sec":i+1, "timestamp": new_timestamp, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
     
     #Send to the main Server(gearstalk_baxkend1)
     print(unique_person)
@@ -119,7 +119,7 @@ def FindUnique(data):
     message = "Video Processing not over!!"
     new_timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
 
-
+    print(frame_sec)
     save_frame(video_id,frame_details,timestamp,frame_sec)
     
     if video_id in features_pack.keys():
@@ -131,7 +131,12 @@ def FindUnique(data):
     
     if None not in features_pack[video_id]:
         video_output = features_pack.pop(video_id)
-        # print(video_output)
+        print(video_output)
+        # db.features.insert_one({
+        #         "video_id": video_id,
+        #         "timestamp": timestamp,
+        #         "metadata" : video_output
+        #     })
         message = UniquePersonSearch(video_id,video_output,new_timestamp)
 
 
