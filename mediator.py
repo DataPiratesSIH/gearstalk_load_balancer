@@ -93,10 +93,10 @@ def UniquePersonSearch(video_id, object_data,timestamp):
                 unpack = ast.literal_eval(k)
                 for _ in range(person[k]):
                     new_timestamp = timestamp + timedelta(seconds=i*frame_rate)
-                    new_timestamp = datetime.strptime(str(new_timestamp), "%Y-%m-%d %H:%M:%S")
+                    new_timestamp = datetime.strptime(new_timestamp, "%Y-%m-%d %H:%M:%S")
                     unique_person.append({'video_id': video_id,"frame_sec":i, "timestamp": new_timestamp, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
     new_timestamp = timestamp + timedelta(seconds=(i+1)*frame_rate)
-    new_timestamp = datetime.strptime(str(new_timestamp), "%Y-%m-%d %H:%M:%S")
+    new_timestamp = datetime.strptime(new_timestamp, "%Y-%m-%d %H:%M:%S")
     for k in array3d[len(array3d)-1].keys():
         unpack = ast.literal_eval(k)
         for _ in range(array3d[len(array3d)-1][k]):
@@ -104,7 +104,20 @@ def UniquePersonSearch(video_id, object_data,timestamp):
     
     #Send to the main Server(gearstalk_baxkend1)
     print(unique_person)
-    r = requests.post(MAIN_SERVER+"/process/FindUnique", data=json.dumps({"video_id": video_id, "unique_person":unique_person}) )
+    video = db.video.find_one({"_id": ObjectId(video_id)})
+    cctv = db.cctv.find_one({"_id": ObjectId(video['location_id'])})
+    # print(unique_person)
+    if unique_person != []:
+        for single_record in unique_person:
+            # not really sure abt the parameters
+            single_record.update({'coord': {"latitude": cctv['latitude'], "longitude": cctv['longitude']}, 'location_type': cctv['location_type'], "street": cctv['street'],
+                                  "city": cctv['city'], "county": cctv['county'], "country": cctv['country'], "state": cctv['state'], "sublocality": cctv['sublocality']})
+
+        # saving unique_persons into db
+        db.unique_person.insert_many(unique_person)
+        db.video.update({"_id": ObjectId(video_id)},
+                        "$set": {"prepared": True, "processing": False}})
+    # r = requests.post(MAIN_SERVER+"/process/FindUnique", data=json.dumps({"video_id": video_id, "unique_person":unique_person}) )
 
     return "Your video is processed"
 
