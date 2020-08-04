@@ -115,8 +115,7 @@ def UniquePersonSearch(video_id, object_data,timestamp):
 
         # saving unique_persons into db
         db.unique_person.insert_many(unique_person)
-        db.video.update({"_id": ObjectId(video_id)},
-                        "$set": {"prepared": True, "processing": False}})
+        db.video.update({"_id": ObjectId(video_id)}, { "$set": {"prepared": True, "processing": False}})
     # r = requests.post(MAIN_SERVER+"/process/FindUnique", data=json.dumps({"video_id": video_id, "unique_person":unique_person}) )
 
     return "Your video is processed"
