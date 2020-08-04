@@ -93,10 +93,10 @@ def UniquePersonSearch(video_id, object_data,timestamp):
                 unpack = ast.literal_eval(k)
                 for _ in range(person[k]):
                     new_timestamp = timestamp + timedelta(seconds=i*frame_rate)
-                    new_timestamp = datetime.strptime(new_timestamp, "%Y-%m-%d %H:%M:%S")
+                    new_timestamp = datetime.strptime(str(new_timestamp), "%Y-%m-%d %H:%M:%S")
                     unique_person.append({'video_id': video_id,"frame_sec":i, "timestamp": new_timestamp, "date": str(new_timestamp.date()), "time": new_timestamp.strftime("%X") , 'labels': unpack[:(len(unpack)//2)], 'colors': unpack[(len(unpack)//2):]})
     new_timestamp = timestamp + timedelta(seconds=(i+1)*frame_rate)
-    new_timestamp = datetime.strptime(new_timestamp, "%Y-%m-%d %H:%M:%S")
+    new_timestamp = datetime.strptime(str(new_timestamp), "%Y-%m-%d %H:%M:%S")
     for k in array3d[len(array3d)-1].keys():
         unpack = ast.literal_eval(k)
         for _ in range(array3d[len(array3d)-1][k]):
